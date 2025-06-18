@@ -1,4 +1,2 @@
 # task-manager-app
 
-
-jumail
