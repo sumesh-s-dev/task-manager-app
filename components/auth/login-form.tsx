@@ -20,12 +20,13 @@ export function LoginForm() {
 
     try {
       const result = await login(formData)
-      if (result.success) {
-        router.push("/dashboard")
+      if (result.error) {
+        setError(result.error)
       } else {
-        setError(result.error || "Invalid credentials")
+        router.push("/dashboard")
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Login error:", error)
       setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)

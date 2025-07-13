@@ -7,24 +7,37 @@ import { users } from "@/lib/database"
 import { v4 as uuidv4 } from "uuid"
 import type { User } from "@/lib/types"
 
-export async function signup(formData: FormData) {
+type AuthResponse = {
+  error: string | null
+  data: { 
+    session: { 
+      user: { 
+        id: string; 
+        name: string | null; 
+        email: string 
+      } 
+    } 
+  } | null
+}
+
+export async function signup(formData: FormData): Promise<AuthResponse> {
   const name = formData.get("name") as string
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 
   // Validate input
   if (!name || !email || !password) {
-    return { success: false, error: "All fields are required" }
+    return { error: "All fields are required", data: null }
   }
 
   if (password.length < 6) {
-    return { success: false, error: "Password must be at least 6 characters" }
+    return { error: "Password must be at least 6 characters", data: null }
   }
 
   // Check if user already exists
   const existingUser = users.find((user) => user.email === email)
   if (existingUser) {
-    return { success: false, error: "User already exists with this email" }
+    return { error: "User already exists with this email", data: null }
   }
 
   try {
@@ -42,15 +55,26 @@ export async function signup(formData: FormData) {
     users.push(user)
 
     // Create session
-    const session = await createSession({
+    await createSession({
       user: {
         id: user.id,
-        name: user.name || "",
+        name: user.name || null,
         email: user.email,
       },
     })
 
-    return { error: null, data: { session } }
+    return { 
+      error: null, 
+      data: { 
+        session: { 
+          user: {
+            id: user.id,
+            name: user.name || null,
+            email: user.email
+          }
+        } 
+      } 
+    }
   } catch (error) {
     console.error("Signup error:", error)
     return { 
@@ -60,7 +84,7 @@ export async function signup(formData: FormData) {
   }
 }
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<AuthResponse> {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
 

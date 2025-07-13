@@ -20,12 +20,13 @@ export function SignupForm() {
 
     try {
       const result = await signup(formData)
-      if (result.success) {
-        router.push("/dashboard")
+      if (result.error) {
+        setError(result.error)
       } else {
-        setError(result.error || "An error occurred")
+        router.push("/dashboard")
       }
-    } catch (err) {
+    } catch (error) {
+      console.error("Signup error:", error)
       setError("An unexpected error occurred")
     } finally {
       setIsLoading(false)
