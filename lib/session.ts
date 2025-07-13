@@ -4,30 +4,37 @@ import { SignJWT, jwtVerify } from "jose"
 const secretKey = process.env.SESSION_SECRET || "your-secret-key-change-in-production"
 const encodedKey = new TextEncoder().encode(secretKey)
 
+import type { User } from "./types"
+
 export interface SessionPayload {
-  user: {
-    id: string
-    name: string
-    email: string
-  }
+  user: Pick<User, 'id' | 'name' | 'email'>
   expiresAt: Date
 }
 
-export async function createSession(payload: { user: { id: string; name: string; email: string } }) {
+export async function createSession(payload: { user: Pick<User, 'id' | 'name' | 'email'> }) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
   const session: SessionPayload = {
-    user: payload.user,
+    user: {
+      id: String(payload.user.id),
+      name: String(payload.user.name),
+      email: String(payload.user.email)
+    },
     expiresAt,
   }
 
-  const token = await new SignJWT(session)
+  const token = await new SignJWT({
+    user: session.user,
+    expiresAt: session.expiresAt.toISOString()
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expiresAt)
     .sign(encodedKey)
 
   const cookieStore = await cookies()
-  cookieStore.set("session", token, {
+  await cookieStore.set({
+    name: "session",
+    value: token,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     expires: expiresAt,
@@ -45,11 +52,22 @@ export async function getSession(): Promise<SessionPayload | null> {
   }
 
   try {
-    const { payload } = await jwtVerify(token, encodedKey, {
+    const { payload } = await jwtVerify<SessionPayload>(token, encodedKey, {
       algorithms: ["HS256"],
     })
 
-    return payload as SessionPayload
+    // Ensure the payload has the expected shape
+    if (payload.user?.id && payload.user?.email && payload.expiresAt) {
+      return {
+        user: {
+          id: String(payload.user.id),
+          name: String(payload.user.name || ''),
+          email: String(payload.user.email)
+        } as Pick<User, 'id' | 'name' | 'email'>,
+        expiresAt: new Date(payload.expiresAt)
+      }
+    }
+    return null
   } catch (error) {
     console.error("Failed to verify session:", error)
     return null
