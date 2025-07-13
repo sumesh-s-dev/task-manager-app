@@ -11,7 +11,7 @@ import { Plus, LogOut, CheckSquare } from "lucide-react"
 import type { Task, User } from "@/lib/types"
 
 interface TaskDashboardProps {
-  user: User
+  user: Pick<User, 'id' | 'name' | 'email'>
 }
 
 export function TaskDashboard({ user }: TaskDashboardProps) {
