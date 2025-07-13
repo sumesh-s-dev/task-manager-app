@@ -13,7 +13,7 @@ type AuthResponse = {
     session: { 
       user: { 
         id: string; 
-        name: string | null; 
+        name: string; 
         email: string 
       } 
     } 
@@ -54,11 +54,14 @@ export async function signup(formData: FormData): Promise<AuthResponse> {
 
     users.push(user)
 
+    // Ensure name is a string (use empty string if null/undefined)
+    const userName = user.name || ""
+    
     // Create session
     await createSession({
       user: {
         id: user.id,
-        name: user.name || null,
+        name: userName,
         email: user.email,
       },
     })
@@ -69,7 +72,7 @@ export async function signup(formData: FormData): Promise<AuthResponse> {
         session: { 
           user: {
             id: user.id,
-            name: user.name || null,
+            name: userName,
             email: user.email
           }
         } 
@@ -105,16 +108,30 @@ export async function login(formData: FormData): Promise<AuthResponse> {
       return { error: "Invalid credentials", data: null }
     }
 
+    // Ensure name is a string (use empty string if null/undefined)
+    const userName = user.name || ""
+    
     // Create session
-    const session = await createSession({
+    await createSession({
       user: {
         id: user.id,
-        name: user.name,
+        name: userName,
         email: user.email,
       },
     })
 
-    return { error: null, data: { session } }
+    return { 
+      error: null, 
+      data: { 
+        session: { 
+          user: {
+            id: user.id,
+            name: userName,
+            email: user.email
+          }
+        } 
+      } 
+    }
   } catch (error) {
     console.error("Login error:", error)
     return { error: error instanceof Error ? error.message : "Something went wrong!", data: null }
