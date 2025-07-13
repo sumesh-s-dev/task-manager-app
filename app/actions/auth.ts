@@ -21,38 +21,39 @@ export async function signup(formData: FormData) {
   }
 
   // Check if user already exists
-  const existingUser = users.find((user) => user.email === email)
+  const existingUser = await db.user.findFirst({ where: { email } })
   if (existingUser) {
     return { success: false, error: "User already exists with this email" }
   }
 
   try {
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
+    const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Create user
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      password: hashedPassword,
-      createdAt: new Date().toISOString(),
-    }
-
-    users.push(newUser)
-
-    // Create session
-    await createSession({
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
+    const user = await db.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
       },
     })
 
-    return { success: true }
+    // Create session
+    const session = await createSession({
+      user: {
+        id: user.id,
+        name: user.name || "",
+        email: user.email,
+      },
+    })
+
+    return { error: null, data: { session } }
   } catch (error) {
-    return { success: false, error: "Failed to create account" }
+    console.error("Signup error:", error)
+    return { 
+      error: error instanceof Error ? error.message : "Signup failed", 
+      data: null 
+    }
   }
 }
 
@@ -61,24 +62,24 @@ export async function login(formData: FormData) {
   const password = formData.get("password") as string
 
   if (!email || !password) {
-    return { success: false, error: "Email and password are required" }
+    return { error: "Email and password are required", data: null }
   }
 
   try {
     // Find user
     const user = users.find((u) => u.email === email)
     if (!user) {
-      return { success: false, error: "Invalid credentials" }
+      return { error: "Invalid credentials", data: null }
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password)
     if (!isValidPassword) {
-      return { success: false, error: "Invalid credentials" }
+      return { error: "Invalid credentials", data: null }
     }
 
     // Create session
-    await createSession({
+    const session = await createSession({
       user: {
         id: user.id,
         name: user.name,
@@ -86,9 +87,10 @@ export async function login(formData: FormData) {
       },
     })
 
-    return { success: true }
+    return { error: null, data: { session } }
   } catch (error) {
-    return { success: false, error: "Login failed" }
+    console.error("Login error:", error)
+    return { error: error instanceof Error ? error.message : "Something went wrong!", data: null }
   }
 }
 
