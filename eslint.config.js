@@ -14,20 +14,12 @@ const commonGlobals = {
   // Add any custom globals here
 };
 
-// Configuration for JavaScript/TypeScript files
-const jsTsConfig = {
-  files: ['**/*.{js,jsx,ts,tsx}'],
+// Base configuration for all files
+const baseConfig = {
   languageOptions: {
     globals: commonGlobals,
-    parser: tsParser,
-    parserOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      ecmaFeatures: {
-        jsx: true,
-      },
-      project: './tsconfig.json',
-    },
+    ecmaVersion: 'latest',
+    sourceType: 'module',
   },
   plugins: {
     '@typescript-eslint': ts,
@@ -42,17 +34,45 @@ const jsTsConfig = {
   },
 };
 
-// TypeScript specific rules
+// Configuration for TypeScript files
 const tsConfig = {
   files: ['**/*.{ts,tsx}'],
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true,
+      },
+      project: './tsconfig.json',
+    },
+  },
   rules: {
     ...ts.configs['recommended'].rules,
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-require-imports': 'off',
+    '@typescript-eslint/no-unsafe-function-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'warn',
   },
 };
+
+// Configuration for JavaScript files
+const jsConfig = {
+  files: ['**/*.{js,jsx}'],
+  languageOptions: {
+    parserOptions: {
+      ecmaFeatures: {
+        jsx: true,
+      },
+    },
+  },
+  rules: {
+    // JavaScript specific rules
+  },
+};
+
+
 
 // React specific rules
 const reactConfig = {
@@ -75,7 +95,15 @@ const nextConfig = {
   },
 };
 
-// Configuration files (e.g., next.config.js)
+// Configuration for test files
+const testConfig = {
+  files: ['**/*.test.{js,jsx,ts,tsx}'],
+  rules: {
+    // Test specific rules
+  },
+};
+
+// Configuration for configuration files
 const configFilesConfig = {
   files: ['*.config.{js,ts}'],
   languageOptions: {
@@ -90,9 +118,11 @@ const configFilesConfig = {
 };
 
 export default [
-  jsTsConfig,
+  baseConfig,
   tsConfig,
+  jsConfig,
   reactConfig,
   nextConfig,
+  testConfig,
   configFilesConfig,
 ];
