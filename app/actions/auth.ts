@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import bcrypt from "bcryptjs"
 import { createSession, deleteSession } from "@/lib/session"
 import { users } from "@/lib/database"
+import { v4 as uuidv4 } from "uuid"
 import type { User } from "@/lib/types"
 
 export async function signup(formData: FormData) {
@@ -21,7 +22,7 @@ export async function signup(formData: FormData) {
   }
 
   // Check if user already exists
-  const existingUser = await db.user.findFirst({ where: { email } })
+  const existingUser = users.find((user) => user.email === email)
   if (existingUser) {
     return { success: false, error: "User already exists with this email" }
   }
@@ -30,13 +31,15 @@ export async function signup(formData: FormData) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const user = await db.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    })
+    const user: User = {
+      id: uuidv4(),
+      name,
+      email,
+      password: hashedPassword,
+      createdAt: new Date().toISOString(),
+    }
+
+    users.push(user)
 
     // Create session
     const session = await createSession({
